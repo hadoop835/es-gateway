@@ -1,1 +1,1 @@
-# es-gateway
+# ElasticSearch gateway
