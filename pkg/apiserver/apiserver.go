@@ -5,6 +5,8 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"github.com/es-gateway/pkg/apiserver/config"
 	indexv1alpha1 "github.com/es-gateway/pkg/eapis/index/v1alpha1"
+	"github.com/es-gateway/pkg/log"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -37,6 +39,7 @@ func (s *ApiServer) Run(ctx context.Context) (err error) {
 		<-ctx.Done()
 		_ = s.Server.Shutdown(shutdownCtx)
 	}()
+	log.Log().Info("start listening on ", zap.String("addr", s.Server.Addr))
 	if s.Server.TLSConfig != nil {
 		err = s.Server.ListenAndServeTLS("", "")
 	} else {
