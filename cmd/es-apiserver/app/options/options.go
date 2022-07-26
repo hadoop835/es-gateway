@@ -6,12 +6,14 @@ import (
 	"github.com/es-gateway/pkg/apiserver"
 	"github.com/es-gateway/pkg/apiserver/config"
 	apiServerConfig "github.com/es-gateway/pkg/apiserver/options"
+	proxyRunConfig "github.com/es-gateway/pkg/proxy/options"
 	"net/http"
 )
 
 type ServerRunOptions struct {
 	ConfigFile      string
 	ApiServerConfig *apiServerConfig.ApiServerConfig
+	ProxyRunConfig  *proxyRunConfig.ProxyRunConfig
 	*config.Config
 }
 
@@ -20,6 +22,7 @@ func NewServerRunOptions() *ServerRunOptions {
 	s := &ServerRunOptions{
 		ApiServerConfig: apiServerConfig.NewApiServerConfig(),
 		Config:          config.NewConfig(),
+		ProxyRunConfig:  proxyRunConfig.NewProxyRunConfig(),
 	}
 	return s
 }

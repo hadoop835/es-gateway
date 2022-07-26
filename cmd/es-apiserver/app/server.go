@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/es-gateway/cmd/es-apiserver/app/options"
 	"github.com/es-gateway/pkg/apiserver/config"
+	"github.com/es-gateway/pkg/proxy"
 	"github.com/es-gateway/pkg/signals"
 	"github.com/spf13/cobra"
 	"net/http"
@@ -19,6 +20,7 @@ func WithApiServerCommand() *cobra.Command {
 		s = &options.ServerRunOptions{
 			ApiServerConfig: s.ApiServerConfig,
 			Config:          _config,
+			ProxyRunConfig:  s.ProxyRunConfig,
 		}
 	} else {
 
@@ -64,6 +66,10 @@ func Run(s *options.ServerRunOptions, configCh <-chan config.Config, ctx context
 }
 
 func run(opt *options.ServerRunOptions, ctx context.Context) error {
+	// start proxy
+	proxyServer, _ := proxy.NewProxy(opt.ProxyRunConfig)
+	proxyServer.Run()
+
 	apiserver, err := opt.NewAPIServer(ctx.Done())
 	if err != nil {
 		return err
