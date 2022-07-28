@@ -22,6 +22,8 @@ type ApiServerConfig struct {
 
 	// tls private key file
 	TlsPrivateKey string
+	//admin
+	AdminServerConfig *ApiServerConfig
 }
 
 func NewApiServerConfig() *ApiServerConfig {
@@ -31,6 +33,13 @@ func NewApiServerConfig() *ApiServerConfig {
 		SecurePort:    0,
 		TlsCertFile:   "",
 		TlsPrivateKey: "",
+		AdminServerConfig: &ApiServerConfig{
+			BindAddress:   "0.0.0.0",
+			InsecurePort:  8000,
+			SecurePort:    0,
+			TlsCertFile:   "",
+			TlsPrivateKey: "",
+		},
 	}
 
 	return &s

@@ -1,6 +1,8 @@
 package log
 
 import (
+	"github.com/bytedance/sonic"
+	"github.com/emicklei/go-restful/v3/log"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -35,4 +37,14 @@ func WithConnID(ctx context.Context, connID uint64) context.Context {
 		logger = Log()
 	}
 	return context.WithValue(ctx, CtxLogKey, logger.With(zap.Uint64("conn", connID)))
+}
+
+func InfoJSONTOString(format string, val interface{}) {
+	result, _ := sonic.MarshalString(val)
+	log.Printf(format, result)
+}
+
+func INFO(format string, v ...interface{}) {
+	log.Printf(format, v)
+
 }

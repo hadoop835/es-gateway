@@ -6,6 +6,8 @@ import (
 	"github.com/es-gateway/pkg/apiserver"
 	"github.com/es-gateway/pkg/apiserver/config"
 	apiServerConfig "github.com/es-gateway/pkg/apiserver/options"
+	"github.com/es-gateway/pkg/client/es"
+	esConfig "github.com/es-gateway/pkg/client/es/options"
 	proxyRunConfig "github.com/es-gateway/pkg/proxy/options"
 	"net/http"
 )
@@ -15,6 +17,7 @@ type ServerRunOptions struct {
 	ApiServerConfig *apiServerConfig.ApiServerConfig
 	ProxyRunConfig  *proxyRunConfig.ProxyRunConfig
 	*config.Config
+	ElasticConfig *esConfig.ElasticOptions
 }
 
 //
@@ -23,6 +26,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		ApiServerConfig: apiServerConfig.NewApiServerConfig(),
 		Config:          config.NewConfig(),
 		ProxyRunConfig:  proxyRunConfig.NewProxyRunConfig(),
+		ElasticConfig:   esConfig.NewElasticConfig(),
 	}
 	return s
 }
@@ -50,5 +54,25 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.ApiS
 		server.Addr = fmt.Sprintf(":%d", s.ApiServerConfig.SecurePort)
 	}
 	_apiServer.Server = server
+	//es
+	_apiServer.Elastic, _ = es.NewClient(s.ElasticConfig)
+	//admin
+
+	//http
+	admin_server := &http.Server{
+		Addr: fmt.Sprintf(":%d", s.ApiServerConfig.AdminServerConfig.InsecurePort),
+	}
+	//https
+	if s.ApiServerConfig.AdminServerConfig.SecurePort != 0 {
+		certificate, err := tls.LoadX509KeyPair(s.ApiServerConfig.AdminServerConfig.TlsCertFile, s.ApiServerConfig.AdminServerConfig.TlsPrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		admin_server.TLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{certificate},
+		}
+		admin_server.Addr = fmt.Sprintf(":%d", s.ApiServerConfig.AdminServerConfig.SecurePort)
+	}
+	_apiServer.AdminServer = admin_server
 	return _apiServer, nil
 }

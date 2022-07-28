@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	ApiRootPath = "/eapis"
+	//ApiRootPath = "/eapis"
+	ApiRootPath = "/"
 )
 
 const MimeMergePatchJson = "application/merge-patch+json"
@@ -19,7 +20,7 @@ func init() {
 
 func NewWebService(gv schema.GroupVersion) *restful.WebService {
 	webservice := restful.WebService{}
-	webservice.Path(ApiRootPath + "/" + gv.String()).
+	webservice.Path(ApiRootPath).
 		Produces(restful.MIME_JSON)
 	return &webservice
 }

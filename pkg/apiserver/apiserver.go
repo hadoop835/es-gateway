@@ -2,8 +2,10 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/es-gateway/pkg/apiserver/config"
+	"github.com/es-gateway/pkg/client/es"
 	indexv1alpha1 "github.com/es-gateway/pkg/eapis/index/v1alpha1"
 	"github.com/es-gateway/pkg/log"
 	"go.uber.org/zap"
@@ -11,9 +13,12 @@ import (
 )
 
 type ApiServer struct {
-	container *restful.Container
-	Server    *http.Server
-	Config    *config.Config
+	container      *restful.Container
+	Server         *http.Server
+	Config         *config.Config
+	Elastic        *es.Elastic
+	adminContainer *restful.Container
+	AdminServer    *http.Server
 }
 
 func (s *ApiServer) PrepareRun(stopCh <-chan struct{}) error {
@@ -22,14 +27,30 @@ func (s *ApiServer) PrepareRun(stopCh <-chan struct{}) error {
 	s.container.Router(restful.CurlyRouter{})
 	//拦截器
 	s.installEsGatewayAPIs(stopCh)
-
 	s.Server.Handler = s.container
+	//
+	s.adminContainer = restful.NewContainer()
+	s.adminContainer.Router(restful.CurlyRouter{})
+	s.installAdminAPIs(stopCh)
+	s.AdminServer.Handler = s.adminContainer
 	return nil
 }
 
 func (s *ApiServer) installEsGatewayAPIs(stopCh <-chan struct{}) {
-	indexv1alpha1.AddToContainer(s.container)
+	s.container.Filter(routeLogging)
+	indexv1alpha1.AddToContainer(s.container, s.Elastic)
 
+}
+
+func (s *ApiServer) installAdminAPIs(stopCh <-chan struct{}) {
+	s.adminContainer.Filter(routeLogging)
+
+}
+
+// Route Filter (defines FilterFunction)
+func routeLogging(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+	log.Log().Info(fmt.Sprintf("%s,%s", req.Request.Method, req.Request.RequestURI))
+	chain.ProcessFilter(req, resp)
 }
 
 func (s *ApiServer) Run(ctx context.Context) (err error) {
@@ -38,6 +59,15 @@ func (s *ApiServer) Run(ctx context.Context) (err error) {
 	go func() {
 		<-ctx.Done()
 		_ = s.Server.Shutdown(shutdownCtx)
+		_ = s.AdminServer.Shutdown(shutdownCtx)
+	}()
+	go func() {
+		log.Log().Info("start listening on ", zap.String("addr", s.AdminServer.Addr))
+		if s.AdminServer.TLSConfig != nil {
+			err = s.AdminServer.ListenAndServeTLS("", "")
+		} else {
+			err = s.AdminServer.ListenAndServe()
+		}
 	}()
 	log.Log().Info("start listening on ", zap.String("addr", s.Server.Addr))
 	if s.Server.TLSConfig != nil {
@@ -45,5 +75,6 @@ func (s *ApiServer) Run(ctx context.Context) (err error) {
 	} else {
 		err = s.Server.ListenAndServe()
 	}
+
 	return err
 }
