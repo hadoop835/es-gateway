@@ -26,7 +26,7 @@ func (s *ApiServer) PrepareRun(stopCh <-chan struct{}) error {
 	s.container = container
 	s.container.Router(restful.CurlyRouter{})
 	//拦截器
-	s.installEsGatewayAPIs(stopCh)
+	s.installEsGatewayAPIs(stopCh, context.Background())
 	s.Server.Handler = s.container
 	//
 	s.adminContainer = restful.NewContainer()
@@ -36,9 +36,9 @@ func (s *ApiServer) PrepareRun(stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (s *ApiServer) installEsGatewayAPIs(stopCh <-chan struct{}) {
+func (s *ApiServer) installEsGatewayAPIs(stopCh <-chan struct{}, ctx context.Context) {
 	s.container.Filter(routeLogging)
-	indexv1alpha1.AddToContainer(s.container, s.Elastic)
+	indexv1alpha1.AddToContainer(s.container, s.Elastic, ctx)
 
 }
 
